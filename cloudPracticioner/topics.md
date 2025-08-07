@@ -345,6 +345,26 @@ AS2 Family suports using AS2 to send and receive messages using s3 as backend
 - Lex - te ayuda a hacer chatbots
 - Kendra: Te ayuda a buscar productos, muy precisamente a comparacion de otras opciones, usa machine learning, mejora productividad
 - Amazon Comprehend: Consigue insights para encontrar relaciones dentro del texto
+- Amazon Polly: busca mimificar la voz humana, convierte texto en discurso
+- Amazon Rekognition, analiza imagenes y videos y te dice que hay en los videos, tiene analisis facial objetos, usa deep learning video y facial analisis
+- Amazon textract: Machine learning para extraer data formar y puede formar tablas, te ayuda a analizar por ejemplo texto de doctores
+- Amazon Transcribe: convierte audio en texto
+- Amazon Translate: Te ayuda a traducir entre idiomas
+
+# AWS Analitic services
+- Amazon athena: Un telescopio que te ayuda a hacer zoom a elementos en s3, importa data lo pone en un SQL en memoria, ayuda a logs analysis, Data lake queries
+- AWS data exchange: Aqui se puede comprar o vender data, se puede monetizar lo que haces
+- Amazon EMR map reduce: Ayuda a hacer big data compilation, ayuda a data analytics data transformation
+- AWS Glue: toma toda la data dispersa  yte ayuda a conectarla, como hacer una constelacion
+- Amazon Kinesis: Similar a kafka, te ayuda a hacer streaming de data en tiempo real
+- Amazon MSK: te permite usar kafka, real time analytics y data ingestion
+- Amazon OpenSearrch Service: es mas extenso que kendra
+- Amazon Redshift: Data warehouse telescope
+
+# AWS Business Application Services - Your Personal Business Toolkit
+- Amazon Simple Email Services: un comunicador de negocio, marketing transactional emails, es como tu post office personal
+- Amazon Connect - Customer Service desk se conecta a backnds sistems o CRMS o AWS services
+
 
 # Preguntas fallidas
 Which of the following features allows you to apply policies and settings across multiple AWS accounts in AWS Organizations?
@@ -373,3 +393,4 @@ NACLs
 EBS
 
 
+75
