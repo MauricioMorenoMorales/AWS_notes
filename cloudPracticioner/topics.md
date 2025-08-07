@@ -365,6 +365,11 @@ AS2 Family suports using AS2 to send and receive messages using s3 as backend
 - Amazon Simple Email Services: un comunicador de negocio, marketing transactional emails, es como tu post office personal
 - Amazon Connect - Customer Service desk se conecta a backnds sistems o CRMS o AWS services
 
+# Customer Engagement Services
+- AWS Activate for Startups: ayuda financiando posibles startups
+- AWS IQ: Te conecta con expertos en el uso de AWS
+- AWS Managed Services (AMS), ayuda a el management operacional y infrastructure management
+- AWS Support
 
 # Preguntas fallidas
 Which of the following features allows you to apply policies and settings across multiple AWS accounts in AWS Organizations?
