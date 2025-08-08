@@ -368,8 +368,25 @@ AS2 Family suports using AS2 to send and receive messages using s3 as backend
 # Customer Engagement Services
 - AWS Activate for Startups: ayuda financiando posibles startups
 - AWS IQ: Te conecta con expertos en el uso de AWS
-- AWS Managed Services (AMS), ayuda a el management operacional y infrastructure management
-- AWS Support
+- AWS Managed Services (AMS), ayuda a el management operacional y infrastructure management, ayuda aprovechar servicios de AWS
+- AWS Support: ofrece apoyo tecnico y guia, en infraestructura, garantiza operaciones fluidas
+
+# Developer services
+- AWS AppConfig: Permite desplegar configuraciones de forma segura y controlada en tus aplicaciones sin necesidad de reimplementarlas.
+- AWS Cloud9: Entorno de desarrollo integrado (IDE) en la nube con soporte para múltiples lenguajes y colaboración en tiempo real.
+- AWS CloudShell: Terminal basada en navegador para ejecutar comandos de AWS CLI sin configurar nada localmente.
+- AWS CodeArtifact: Servicio para almacenar, compartir y gestionar paquetes de software (como npm, Maven, PyPI) de forma segura.
+- AWS CodeBuild: Servicio completamente administrado para compilar código, ejecutar pruebas y producir artefactos listos para desplegar.
+- AWS CodeCommit: Repositorio Git privado y seguro alojado en AWS para controlar versiones de código.
+- AWS CodeDeploy: Automatiza el despliegue de código a instancias EC2, Lambda, contenedores u on-premise.
+- AWS CodePipeline: Orquesta el flujo completo de integración y entrega continua (CI/CD) desde el código hasta producción.
+- AWS CodeStar: Plataforma para lanzar y gestionar proyectos de desarrollo con CI/CD integrado desde una sola consola.
+- AWS X-Ray: Herramienta de trazabilidad para analizar el comportamiento y rendimiento de aplicaciones distribuidas.
+
+# AWS End-User Computing Services
+- Amazon AppStream 2.0: 
+- Amazon WorkSpaces: 
+- Amazon Workspaces Web:
 
 # Preguntas fallidas
 Which of the following features allows you to apply policies and settings across multiple AWS accounts in AWS Organizations?
