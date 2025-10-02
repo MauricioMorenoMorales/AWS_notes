@@ -462,6 +462,8 @@ Sticky sessions
 - Cuando tu base de datos tiene muchas read operations, se puede crear un Read replica, En bases de datos (como MySQL, PostgreSQL, Amazon RDS, etc.), una Read Replica es una copia de solo lectura de tu base de datos principal (master).
 Se mantiene sincronizada automáticamente con la base de datos principal.
 Solo se pueden hacer consultas (SELECT), no escrituras (INSERT, UPDATE, DELETE)., sirven para Escalar lectura, tener redundancia /disponibilidad, tener backup y analisis
+- Si la RDS llega a sus limites de procesamiento de read requests podemos crear read replicas, cualquier pregunta en el examen acerca de mucho uso de cpu pro read requests, las read replicas son la respuesta, se pueden usar hasta 15 replicas, la data es sincronizada asincronamente para leer replicas, leer replicas en la misma region no cuesta dinero pero si si lo haces entre distintas regiones
+- Sandby databases can be deployed in a different AZ changes will be synced synchronously
 
 # AWS Aurora
 - Tiene mejor performance scalability availability y durability precio y es en general mas facilmente manejada
@@ -469,6 +471,10 @@ Solo se pueden hacer consultas (SELECT), no escrituras (INSERT, UPDATE, DELETE).
 - La estructura normalmente existe una instancia primaria y hasta 15 replicas, para leer pero no escribir, tiene multi AZ deployment, data replication, primary y replica instances, tiene automatic Failover y fault-tolerant storage
 - Cluster volume: una forma de distribuir y redundar el storage, es manejado automaticamente, y self-healing
 - Un Aurora endpoint en AWS es una dirección de red (DNS) que permite conectarse a una base de datos Amazon Aurora, ya sea al clúster completo, a la instancia principal (writer) o a instancias de lectura (readers). Se puede usar para conectarse a la base de datos desde aplicaciones, balancear lecturas entre réplicas, o ejecutar escrituras en la instancia principal.
+- Data is replicated between 3 AZs wth 6 opies
+- las replicas solo puedn ser leidas
+- Escanea automaticamente y repara errores
+
 
 # RDS Proxy
 - Normalmente si muchas aplicaciones se conectan con una sola base de datos puede haber problema, en especial esto pasa cuando las lambda functions leen la base de datos, el proxy funciona como un load balancer
@@ -501,6 +507,14 @@ Solo se pueden hacer consultas (SELECT), no escrituras (INSERT, UPDATE, DELETE).
   - Hay mucha lectura en una misma partition key
   - Incufficient partition key varianceo
   - Large items
+  se arregla 
+    - Dsitribuyendo partition keys
+    - Exponencial backoff when exceptions occur
+    - Utilize DynamoDB Accelerator (DAX) if the throttling is due RCUs
+
+- Se puede configurar para seleccionar la consistencia que quieres
+  - Eventually consistent read
+  - Strongly consistent read: mas caro
 
 # Global secondary indexes
 - Una query puede verse asi (product_id = 999, user = sam@gmail.com)
@@ -541,8 +555,690 @@ Estan las operaciones basicas
 
 # Dynamo DB transactions
 - Supongamos que compras algo, hay dos tablas una de ordenes y otra de tabla, una transaccion hace que una operacion se ejecute con ambas tablas, asi si una falla no quede data dessincronizada en la otra base de datos Correcto ✅: Una transacción evita que se guarde un registro en la tabla de órdenes pero falle en la tabla de pagos (o viceversa). En caso de error, se hace un rollback y nada se guarda, evitando desincronización.
+- Las transacciones ocupan 2x WCYs y RCUs que uno normal
 
 # DynamoDB TTL
 - Elimina informacion cuando expira en una base de datos
-
 - Projection expresion: Retrieves a subset of attributes
+
+# Dynamo DB streams
+- Te permite guardar records de eventos que estan ocurriendo en la tabla, esto se puede asociar a distintos eventos, tipo lambda o kinesis firehouse and data analytics, puedes leer keys, new_image, old_image, new_and_old_image, para ver como era antes del cambio o despues del cambio
+- tiene 24 hour retemption
+
+# DynamoDB Dax
+- Cuando una base de datos es read heavy, puedes usar DAX que es un cache, esto acelera ese tipo de procesos, esta disenhada especificamente para dynamoDB
+  - Fully managed cache
+  - Compatibility with DynamoDB API
+  - Ideal for high reads workloads
+  - Customizable Time-To-Live (TTL) settings
+  - Scalability and High availability
+
+# ElastiCache
+- Mejora el preformance de la aplicacion para aumentar la velocidad
+- Managed service
+- Uses open source cache engines, with Redis y memcache
+
+# MemoryDB for Redis
+- Los casos de uso comunes para este servicio serian los siguientes
+  - Ride sharing app: guarda data real estatus localizaciones, user profiles, session states, ride and delivery requests, prices
+  - MemoryDB replica data entre distintas AZ, y es recuperable y una durabilidad mayor a solo redis
+- Fully managed
+- Redis compatibility
+- Failover management
+- Scalability
+- Cost Effectivenes
+- Se pueden particionar en shards
+- Se pueden hacer snapshots de cada base de datos en cualquier punto
+- Se diferencian en estas cosas de elasticache
+  - MemoryDB tiene focus en availability y durability, elasticache solo en performance
+  - Full durable automatically replicates data between AZ, Elasticache Optional durability
+  - MemoryDB es sincrona y elasticache asincrona en cuanto a replicaciones
+  - MemoryDB es mejor si quieres durabilidad rapida, y elasticache cuando quieres velocidad a toda costa
+  - MemoryDB es mas cara que elasticache
+
+# CloudFront y CDNs
+- Los cdns son para acercar contenido geograficamente al cliente
+- Cloudfront te ayuda a manejar el acercamiento de tus contenidos al cliente, los distribuye a edge locations
+- Origin is the source location for content that will be cached by cloudfront, es el recurso que se distribuira
+- Puedes crear una distribucion en clud front, es una unit/block en cloudFront
+- Primero cloudfront recibe el request busca sus edges location como un cache, y si no la encuentra va al s3, funciona con una logica similar a un cache
+- Se pueden configurar los s3 con cache invalidation para recibir las requests directamente
+- El TTL determina cuanto tiempo se van a cachear los archivos
+- Las distribuciones son single unit of configuration de cloudfront
+- supongamos piden un carro rojo una vez, este carro rojo se mandara a cloud front pero despues se actualiza el s3 con un carro azul, si vuelves a hacer una paticion no te aparecera azul si no rojo, por que esta en cache para actualizar todo se tiene que hacer un cache invalidation
+
+# Cache behavior
+- Tells cloudfront which origin would like it to retrieve objects from
+- Cloudfront cache: cuando un usuario pide algo primero a un edge location se genera un cache key que identifica un nuevo archivo dentro de el cache, hasta hacer hit al archivo, si no hace hit osea hace un miss se va a s3
+- Las cache keys son para identificar recursos movidos por cloudfront
+- El cache policy registra reglas a seguir por cloudfront, pones el resource si hay queries si hay hostname, defines aca el ttl
+- Si el request tiene otros atributos como language, query parameters o cookies se tienen que agregar al origin policy
+
+# Signed URLs
+- Restringen el acceso a contenido, solo usuarios con un sign url valido tienen acceso
+- Es normalmente usado en streaming services, o private documents, o confidential resources
+- Funciona similar a las s3 signed urls
+- Tambien existen las signed Cookies, normalmente se usan cuando vas a usar muchos archivos, mientras que la URL es mas para algunos pocos archivos uno por uno
+
+# Clopudfront Geographic restriction
+- Aqui puedes decidir que paises pueden ocupar este servicio
+- Se pueden usar Whitelists o Blacklists, para definir quienes entran y quienes no entran
+
+# Elastic Beanstalk
+- Elastic beamstalk te ayuda a que te centres en tu app en vez de andar haciendo arquitectura
+- En vez de que entres configures login load balancers databases y ec2 instances usas beanstalk
+- Te ayuda tambien a hacer health checks
+- Los developers se concentran mas en foco y productividad
+- Resource y cost optimization
+- No cuesta cargos adicionales, solo pagas por lo que usas 
+- Tambien te dan environments, uno para development y otro para production con las mismas caracteristicas
+- Existe el worker environment, que procesa varias tareas en el background que la app necesita
+- Cuando haces un deployment, tienes varios tipos
+  - Single instance deployments: solo ocupas un ec2 instance
+  - High-Availability deployiment: usas distintas ec2 con un load balancer
+- Le tienes que agregar un IAM role a beanstalk para que pueda manimular o crear servicios de AWS
+- Cuando deployeas tu codigo este se guarda en buckets versionadas de S3
+- Te da durability y reliability, version control, security y scalability
+- Elastic beanstalk puede ser usada con cloud formation
+- Se integra con CI/CD Pipelines
+
+ # Deployment options
+- All at once and rolling, actualiza todas las instancias a la vez, rolling va haciendolos poco a poco
+- Rolling with Additional Batch: introduce mas instancias nuevas primero y va terminando y reiniciando las demas hasta que todas esten actualizadas, es mas cara por que ocupas mas istancias
+- Immutable: Despliegas una nueva version de auto scaling group con la nueva version , cuando esten todas desplegadas los mergeas
+- Traffic splitting: usas el load balancer para ir direccionando a una version vieja y nueva en  aws
+- Blue / Green: se inicia un nuevo entorno beamstalk y se van distribuyendo las cargas entre ambos entornos, usa route 53 para direccionar al environment
+
+
+# Lifecycles policies
+- Se pueden agregar un numero maximo de versiones disponibles, borrar las mas viejas
+- Se suelen borrar versiones dependiendo el tiempo que esten sin usar
+- Delete Source bundles
+- Delete protecton: proteger algunas versiones de ser borradas
+- Se pueden borrar de beamstalk pero mantener en un s3
+
+# EBextensions
+- Se pueden configurar beamstalk con la consola, pero tambien se puede agregar un archivo llamado .ebextensions, por ejemplo .ebextensions/network-load-balancer.config
+
+# Tipos
+- Beamstalk soporta docker
+All-At-Once: update es el mas rapido pero tiene mas impacto al usuario por que no se pueden usar los servidores
+
+# Containers
+- Un contenedor te permite guardar una aplicacion y los archivos necesarios librerias y dependencias que necesita la app
+- Es como una version ligera de virtual machines
+- Es un sistema escalable, y va dando availability si el servidor en el que tienes tu app es cerrada
+- Container orchestrators are the brains of a containerized environtments
+  - Deploys containers across all available servers
+  - Load balances
+  - Restarts failed containers
+  - Moves containers when hosts fail
+  - Provides container to container connectivity
+  - Se suele usar Kubernetes, apache mesos y ECS
+
+# Elastic Container Service
+- Ayuda a orquestrar y manejar las aplicaciones, es un orquestador de contenedores
+- Es un servicio manejado por AWS
+- Corre sobre EC2 instances y fargate
+- ECS es un software propietario solo disponible en aws
+- Task Definition
+  - Es una instruccion para decirle a ECS como quieres desplegar las imagenes, un template de como subir un container
+- Launch Type: aqui se configura las caracteristicas de los EC2
+- Launch type: Fargate, no tienes que proveer las instancias, ECS se encarga de crear el entorno
+- Container Instance Role: cuando usas una instancia EC2, se le tiene que dar un rol al EC2 para que pueda crear y administrar recursos o mostrar logs, es un rol
+- ECS Task Role: Este permite a un servicio ECS hablar con otros servicios
+- ECS Load-Balancer: Puedes crear un load balancer para cada servicio
+- ECS With EFS for persistent volume, aqui puedes crear un file system entre contenedores
+- ECS Placement strategies
+  - Binpack: ECS despliega las instancias buscando maximizar o llegar al 100% de la potencia de tu instancia para ahorrar
+  - Spread: Distribuye equitativamente las tareas en distintas AZ o lugares
+  - Random: Selecciona de manera aleatoria las EC2 instances
+- ECS - CI/CD Pipeline: se puede integrar un CI/CD a tu aplicacion
+- ECS Autoscaling, ECS tiene la posibilidad de auto escalar tus tareas
+- No estas siendo cobrado por ECS solo por el computo
+- Los puertos expuestos por tu app tienen que ser los mismos expuestos en el contenedor
+- Cuando creas un servicio el numero de tasks que crees seran la cantidad de instancias que se crearan
+- ECS has two roles
+  - Container instance role - used for pulling images launching containers and sending logs & metrics
+  - ECS Task Role - used for tasks that need to access other AWS services
+
+# Updating ECS Task
+- Minimum healthy percent, Maximum health percent: number of tasks that need to be running during an update, significa que tu numero de tareas no pueden pasar de cierto numero, por ejemplo siempre tiene que haber un servicio abierto para que no se corte el trafico
+
+# Elastic container registry
+- Simplifica el proceso de crear y deployear docker container services, para usar kubernetes o docker swarm
+- tambien se puede usar con EKS
+- Existe el Public ECR, para open source proyects, y el ECR las cuales son usadas para organizaciones en general
+- ECR comprime imagenes, encripta imagenes, maneja versiones de imagenes, su lifecycle y maneja el control de acceso
+
+# Elastic Kubernetes Service
+- Kubernetes is an open source container orchestrator
+- Kubernetes cluster has two types of nodes
+  - Control plane nodes - managers of the cluster
+  - Worker nodes - responsible for actually running the containerized work loads
+- Managing control-plane/master nodes is difficult, the user is responsible both managing the nodes
+- AWS Elastic Kubernetes service is a managed kubernetes service
+  - EKS manages the control plane for you
+  - Users are still responsible for managing worker node
+  - Unless the decide to use Fargate (AWS will manage the nodes)
+- Can be integrated with IAM, Elastic load balancing, ECR
+- Existen dos tipos de launches
+  - Fargate, aws maneja los pods
+  - EKS with EC2 tu manejas los contenedores
+- EKS LoadBalancer
+
+ECR
+  - Fully managed docker container registry service provided by aws
+  - Support private & public repositories
+  - Supports image scanning and lifecycle policies
+
+ECS vs EKS
+  - ECS is propietary to aws migrating for other resources is difficult
+  - ECS is simplier
+  - EKS es mas dificil, pero tiene un ecosistema gigante
+  - ECS no cuesta dinero solo la infraestructura, EKS es mas caro
+
+# Amazon SQS
+- Se siele usar para evitar degraded performance y higher cost, cuando un servicio puede ser abrumado
+- SQS da message decoupling, procesamiento asincrono, tiene scalable architecture
+- Components
+  - Queue: el principal componente, recibe mensajes con informacion
+  - Producers: quienes  mandan el mensaje a la cola
+  - Consumers: quienes la consumen
+  - Message Attributes: Key value data
+  - Visibility Timeout: cuanto tiempo se mantiene un mensaje visible en una cola
+  - Lock message
+- un producer puede ser un servicio tipo EC2, lambda, S3, los cuales tambien pueden ser lambdas o EC2
+- Existen los standard queue y los fifo queue
+- SQS standard queue: Best effort ordering, at least once delivery, maximum throughput
+  - no vas a recibir respuestas en un orden correcto y puedes recibir una respuesta mas de una vez
+  - Tiene maxima retencion de 14 dias
+  - 257KB por mensajes
+- SQS FIFO Queue
+  - Strict order
+  - 300 messages per second
+  - 9000 messages
+  - Aqui si recibes el orden correcto sin duplicados
+  - Message grouping
+  - limited throughput
+  - Maximum retention period of 14 days
+
+SQS Extended Client Library
+  - Se usa para contenidos de mensajes largos, se guardan estos en un S3 bucket, y se maneja la referencia, se manda la referencia al objeto al consumidor
+  - soporta hasta 2GB de contenido
+  - Backwards compatibility
+  - Cuesta mas
+  - Easy to use
+
+SQS with auto Scaling Group
+  - se pueden trackear los mensajes recibidos y escalar el tamanho del grupo
+  - Tambien estan los SQS Access Policy para establecer quien puede hablar con una cola
+
+# SQS Settings
+- Pone un tiempo, para que el consumidor pueda ir y ver si puede obtener informacion, durante este tiempo nadie puede revisarla
+- When consumer processes a message the message will not be seen by other consumers during the visibility timeout, it should be long enough to account for how long it takes to process a message
+- Delay Queue: no se puede ver el mensaje hasta que pase un tiempo
+- Short polling: Los consumidores van a checar el SQS varias veces, esto es ineficiente, con long polling, cuando traes informacion mantienes la coneccion abierta y observas esperando a que traiga respuesta eso se le llama long Polling
+
+- Que es un dead letter queue?
+
+# SQS Dead Letter Queue
+- Cuando la funcion que tiene que ejecutar el queue falla, se trata otra vez de ejecutar n numero de veces este retry con un threshold, si esto continua se manda un dead letter queue, en el que se detalla informacion para que pueda analizarse el error
+
+# SNS
+- Es como un gestor de correos, que se mandan a distintas personas
+- Tenemos publishers o producers, los cuales publican info a SNS los cuales mandan la informacion a sus subscribers
+
+SNS topics
+  - Publicas a un topic y solo los consumidores que estan suscritos a esos topics reciben el mensaje
+
+- Puede usarse varios publishers, budgets, S3, auto scalers, beanstalk, cloudwatch, security services, tambien se pueden usar varios servicios como subscribers, redshift kinesis data firehouse, s3
+
+- Se puede usar un Fanout architecture, que se replica en diferentes endpoints, por ejemplo se puede usar en publicacion de videos se notifiquen a todos los subscriptores
+
+- Puedes usar SNS Policies para definir quienes pueden hablarle a tus SNS services
+
+# AWS Events Bridge
+- Te ayuda a administrar eventos entre diferents targets, puede ser cualquier tipo de evento, subir buckets ec2 events lambda Sass o custom applications
+- Se enrutan dependiendo las reglas las cosas a otros servicios
+- Un event bus es un router que recibe eventos y los manda a ciertos targets
+- Se pueden establecer timeouts
+
+# AWS Step functions
+-  Step functions ensures seamless and reliable order fullfillment
+- cuando tienes muchos servicios interactuando puede haber problemas
+- Estas funcionas paralleliza, manejan errores retries y escalations, y permiten ver el workflow
+- Estas funciones por ejemplo pueden ser usadas durante el procesamiento de pago para verificar riesgos o fraudes
+- Pueden checar que el inventory tenga el producto, genera labels en el shipping label, y verifican el shipping o completion
+- Pueden ser usadas para verificar que las personas no suban contenido inapropiado
+- Si hay error se puede mandar a otro servicio para ser verificado por otras personas, o puede ser publicado si no ahy error
+- Cada step tiene que tener un task state
+- Task states represents a unit of work being done by another aws service
+- Step Function states
+  - Pass - Passes its input without performing work
+  - Choice: Adds conditional logic to state machine
+  - Fail: Stops the execution of the state machine and marks it as failure
+  - Succed: stops execution succesfully
+  - Map: Run a set of workflow steap for each item in a set
+  - Parallel: Run separate branches of execution
+
+- Task token
+  - Cuando tienes que hablar con un sistema tercero le puedes mandar un token, y cuando este terminado se toma ese token y se pasa a este step, el token dice continua con el workflow, por ejemplo al validar el pago con tarjeta de alguien
+
+# Lambda
+- Normalmente cuando creas aplicaciones necesitas sistemas operativos dependencias fixear bugs aplicar patches etc
+- requiere de un trigger, y se ejecuta una funcion
+- Es un servicio en el que no manejas ningun servidor, solo pagas on-demand, automaticamente escala
+- Tambien se pueden desplegar con container images
+- Puedes llamar una funcion desde el api gateway
+- Con esto se suele crear arquitecturas de micro servicios
+- Los eventos pueden tener un event object y un context object
+- Las formas de aumentar la potencia de la lambda function es con mayor memoria pero esto hace que cueste mas dinero la mejora
+
+# Synchronous and asynchronous
+- Una llamada es sincrona cuando un usuario invoca una funcion y espera su respuesta, los errores suelen ser manejados por el cliente
+- Synchronous invocation: api gateway, load balancer, s3 batch, lambda edge, amazon cognito, step functions
+- Asynchronous invocations: son cuando no tienes que esperar a la respuesta, background processing jobs, o son servicios que no retornan respuestas
+- SQS, event bridge, S3 events, Simple notification service
+
+
+# Lambda layers
+- Se usan para compartir dependencias por ejemplo un node modules compartido entre distintas lambda functions
+
+# Lambda with ALB
+- Se puede agregar application load balancer a las lambdas, se asocian a unas reglas que escuchan un listener, despues se va a un target group y estos target groups executan las lambda
+- Multi header values: se puede transformar las queries o payload a un json con los query parameters y headers
+
+# Lambda permissons
+- Las lambda functions tienen que tener un execution role, que usa IAM roles y policies, ya que estas tienen que interactuar con S3 o cloudwatch
+
+> Las lambda functions pueden usar environment variables y encriptarlas con kms
+
+# Lambda versions
+- Puedes versionar o hacer snapshots de cada lambda function, puedes tener distintas versiones una para qa o para produccion
+- Lambda Aliases: se puede poner una funcion usando un aliases, pero esta tambien puede funcionar como load balancer, direccionando trafico a distintas funciones que comparten el mismo nombre
+
+# Lambda Dead LEtter Queue
+- Si falla una funcion se puede hacer retry unas cuantas veeces
+
+# Lambda Destinations
+- Puedes hacer o definir con este concepto que va a hacer la lambda function una vez completado
+- Las destinaciones solo son aplicables para lambda functions asincronas, tiene success y failure handling
+
+# Monitoring
+- Podemos usar cloudwatch para ver invocations, duration, errors, success rate, throttles, concurrent executions, Asyn Delivery Failures, Dead letter errors, Iterator age, Provisioned Concurrency utilization
+- Lambda Tracing x-ray: esto se activa con el active tracing setting
+  - Esta lambda function necesita IAM permissons to send x-ray tracing
+
+# Lambda Networking
+- Lambda functions by default can access the internet but cannot access private subnets in a VPC
+- You can run Lambda functions within a VPC which will create an ENI for them in the private subnet
+- When run in a VPC lambda functions will not have access to internet, and you will need a NAT gateway or VPC endpoint
+
+# Lambda Execution context
+- Eecution environtment - Isolated runtime environment that manages the resources required to run your Lambda function, is created when lambda function is invoked
+- Execution context remains available for some time in anticipation of your function getting invoked again
+- It can reuse the context from previous invocation
+- Since the execution context gets reused for subsequent invocations
+- Great for initializing database connections as well as SDK and HTTP clients
+- Un error comun que suele pasar es inicializar la coneccion de la base de datos dentro de la lambda function (la funcion principal que estas exportando), esto no es optimo se reinicia la coneccion siempre, es mejor inicializarla fuera de la funcion
+- Puede llegar a 10gb en tamanho
+
+# Lambda storage
+- Code Storage
+- Temporary Disk Storage /tmp: Se destruye cuando cambia el contexto
+- AWS Lambda Layers
+- S3
+- Elastic File System (EFS)
+
+- EFS supports up to 25000 connections per file system
+- Lambda instances maintain EFS connections across invocations
+- Reserved concurrency limits lambda connections
+- EFS can handle 3000 burst connections and then 500 per minute
+- One can monitor connections via the ClientConnection metric in cloudWatch
+- EFS uses a bursting model: throughput scales with size, excessive read/write ops deplete burst credits throttling performance
+- Burst credits accumulate and are used with read/write ops
+- Provisioned concurrency functions are use burst credits even when idle
+- One can monitor burst creditBalance metric to manage throughput
+IOPS
+  - IOPS measures read/write operations per second
+  - General purpose mode caps IOPS for lower latency, suitable for most apps
+  - Monitor percentIOLimits for IOPS usage
+  - Reaching 100% on PercentIOLimit can cause function timeouts due to delays
+
+# Limits & concurrency
+- Existen cold starts que son los processos que pasan cuando se llama una funcion que no ha sido usado durante un buen tiempo
+- Estos son limites que alica aws para mejorar el rendimiento, solo un numero de funciones pueden correr concurrentemente
+- los soft limits son los siguientes: configurables
+  - Concurrent executions: 1000
+  - Function and layer storage: 75GB
+  - Elastic network interfaces per VPC: 250
+
+- Si una funcion alcanza las 1000 concurrencias, las demas ya no podran pedir nuevas instancias, dara un error throttleError 429
+
+- Hard Limit: Inmutables
+  - Memory Allocation: 128MB to 10240 MB with 1 increment
+  - Function timeout: 15 minutes
+  - Deployment package size: 50MB for .zip, 250 MB for zip files inS3
+  - Environmental Variables: 4kb
+  - Layer limit: Up to 5 layers at the time, max 250MB
+  - Function Layers: Maximum size of a function 250MB, single layer 50MB
+  - Ephemeral storage: 512 MB to 10GB
+  - File descriptor limit
+  - Execution processes or threads
+
+# Lambda and cloudfront
+- Se puede usar cloudfront para las lambda functions
+- Cuando se ejecutan las funciones?
+  - cloudfront: Cuando cloudfront recibe un request de un viewer, y antes de que cloudfront mande un request al origin
+  - Lambda@Edge: los mismos que cludfront, ademas de cuando cloudfront recive una respuesta del origen, antes de que cloudfront retorne una respuesta al viewer
+- Cuando se usan las cloudfront functions?
+  - Son usadas para cache key normalization
+  - Header manipulation
+  - URL redirects or regrites
+  - Request authorization
+- Cuando se usa lamhda edge
+  - Long running functions
+  - Configurable CPU and memory functions
+  - Dependencies on third party libraries
+  - Network dependent functions
+  - File System or HTTP request access function
+
+# TIPS
+- If you increase memory for the lambda function it will also increase cpu power
+- Provisioned concurrency allocates instances upfront to mitigate cold starts
+- CLoudfront functions run when cloudfront receives a request or sends a response back to the user
+- Lambda@edge triggers on cloudfront request response origin request and origin response
+
+# API gateway
+- EL gateway funciona como un guardia de seguridad en la entrada de una plaza, esto hace que las tiendas internas no se preocupen por seguridad por que la entrada principal esta protegida
+- Is fully managed, has version management
+- Supports restful API and websokets, supports throttling and caching, api gatewas integrates with IAm to make identification and authorization
+- Endpoint types
+  - Edge optimized
+    - Usa cloudfront para acercar a los clientes
+  - Regional
+    - Es especifica para una region, ideal para gente en una misma region
+  - Private for VPCS: se usa para servicios internos
+- Se puede crear una REST API, HTTP API o Websocket
+  - El REST API tiene mas features pero es mas cara
+    - Suporta api keys
+    - Request validation
+    - Request and response transformations
+    - Suports all endpoint types
+    - Full suite of monitoring & logging
+  - HTTP API
+    - Optimizado para mejor performance
+    - Streamlined for core functionality
+    - More cost efective
+    - Built in cors support
+    - Automatic deployment
+
+# API stages
+- Aqui puedes crear stages, tipo qua staging y prod, con distintos urls para poder estar probando tus entornos
+- Tambien existen stage variables que son variables de entorno que cambian dependiendo el entorno que estemos usando
+- se suelen usar al crear la api gateway en el arn por ejemplo
+arn:324234/function:${environment variable}
+
+# Canary Deployment
+- Se puede tener una version en produccion y un 10% a un canary state para testear la siguiente version
+
+# Integration types & Mapping templates
+- Como la data es enviada entre el usuario api gateway y server
+  - EL usuario manda un request con metod headers y body
+  - Estadata la recibe el gateway y puede enviar la data al target, pero tambien puede extraer data y mandar solo lo importante, extraer headers y body
+- Integration type mock, aqui el api gateway no envia la info de internet a lambda
+- AWS_PROXY: cuando el usuario manda el request, el api gateway extrae data necesaria y se manda al lambda, solo funciona como proxy
+- HTTP_PROXY: igual que el anterior pero en vez de lambda usa un server
+- Integration type AWS: Aqui el api gateway extrae la data y mapea completamente la info que se manda a los lambda
+- Integration type HTTP: similar al type aws pero con un server
+
+# CORS
+- Por default el web browser no puede enviar requests a un server de un dominio diferente, cross origin resource sharing nos ayuda a arreglar este problema, el API gateway te ayuda a cambiar este comportamiento por defecto
+
+# Open API
+- Es una especificacion que te ayuda a documentar como una api debe de ser configurada
+
+# Caching API gateway
+- Se puede habilitar para algunos environments, esto es usado especialmente para el development environment
+- Cache invalidation: El usuario para invalidar el cache tiene que tener IAM permissons
+- Esto suele ayudar a gastar menos en los entornos de desarrollo
+
+# Authorization and authentication
+- Aqui se suele verificar si el usuario tiene permiso para acceder a algun servicio, se puede llamar a un lambda authorizer, que se contacta a un oauth provider, se puede asignar una policy temporal en cache para que continue trayendo data
+- Tambien el usuario se puede contactar con cognito y traer info la que ya despues el gateway se encargara de verificar
+
+# API Keys & usage plans
+- Un api key permite el acceso a una API, tiene que ser incluida en el header de los requests
+- Existen usages plans, especifican quienes pueden acceder a deployed apis, y que tantos usuarios pueden usar esa api, por ejemplo si se pueden hacer 100 requests por segundo, definir que tanto
+- La key se asocia a un usage plan
+- Se pueden usar distintos usage planes uno para usuarios normales o premium etc
+
+> Tambien puedes usar websokets con la api gateway
+
+# SAM Basics - Severless application mode
+- Simplifies serverless deployment
+- Extension of AWS Cloudformation
+- Local Development and Testing
+- Integrated With AWS Services
+- CI/CD Integration
+- Con el comando sam sync --stack-name (stack) -- watch puedes sincronizar cambios locales con los subidos en remoto 
+
+SAM COmponents
+  - Sam template: un archivo de configuracion con los servicios usados
+  - SAM CLI
+  - SAM Repository: Ayuda a reusar componentes
+
+SAM Template
+  - Aqui tienes que proveer toda la info de los servicios que usaras
+
+# SAM policy templates
+- Las sam policies te ayudan a darle permisos a lambda functions o servicios integrados adentro, puedes encontrar policies pre configuradas
+
+# CLI SAM commands
+- SAM init
+- SAM build
+- SAM deploy
+
+# KMS
+- Simetric y assimetric encription
+  - EN la simetrica una llave descifra y encripta
+  - La asimetrica una llave encripta y otra deencripta
+- KMS te ayuda a crear manejar y guardar las keys, usan policies para determinar quienes las pueden usar
+- Existen dos tipos de llaves, las client managed keys y las AWS managed keys, en las AWS managed keys no hay mucha personalizacion
+- Tenemos varias categorias en key management service
+  - Control: Customer control, create delete enable disable schedule deletion auto-rotat, aws controls key rotation and policy management customers viws metadata only
+  - Key policies: Customers manage access, define keey policy and IAM policies, AWS manages key policy customers cannot view or change
+  - Visibility: Customers view all usage and management events in CloudTrail, Customers view usage events only
+  - Customers enable/disable automatic annual rotation or rotate manually, AWS autorotates annually customers cannot change schedule
+  - Keys used with any AWS KMS-integrated service customers decide usage
+  - Keys used by specific AWS services only: each service manages keys
+  - Cost Costs for creation and usage of customer managed keys in AWS KMS, no direct cost for creation and usage indirect costs for AWS services using these keys
+  - kms can only encrypt 4kb, you need to use generatedatakey api for that
+- KMS has adjustable resource quotas; breaching them triggers a LimitExceeded Exception
+- Request quotas limit API operations per second; surpassing them leads to to a throttling Exception
+- Handle KMS throttling effectively with exponential Backoff
+- Utilize data key caching for envelope encryption
+- Request an AWS limit increase if necessary
+- Define Key Poicies for all key operations: Create, delete, encrypt and decrypt
+
+# Systems manager parameter store
+- Secure storage of rconfiguration data and secrets, stores also database strings passwords, plain text and encrypted data
+- Es el parameter store que usabamos en fmi xd
+- Existe una jerarquia, en la que se clasifican los parametros en distintas secciones, tipo auth , database, todos estan bajo el directorio /org
+- Se pueden agregar expirations, que eliminan el parametro en algun momento
+- Existen expiration notifications
+- Existen NoChangeNotification, notification for unchanged parameter
+
+## Secrets managere
+- Es como un parameter store pero te permite guardar informacion sensible
+- Existe rotation invoking
+
+# ACM Amazon certificates manager
+- Un certificado te prueba que eres dueño de un dominio, estos te sirven para autenticacion
+- Se usa en Elastic load balancer, en amazon cloudfront y en elastic load balancer, no en s3 lambda o ec2
+
+# AWS Cognito
+- Este servicio te ayuda a manejar las sesiones, login entre otros
+- Maneja credentials sessions y passwords
+- Cognito es para tu propia aplicacion no es como IAM
+- Te da Password Storage
+- Integracion con identity providers
+- Te ayuda a acelerar el proceso de crear una aplicacion
+- Pagas por uso, los primeros 15.000 usuarios son gratuitos
+- Cognito user pools: incorporates authentication into an app, manages user sign-up and sign-in functions
+- Cognito Identity pools Enables app users to directly access AWS, provides AWS credentials directly
+
+# Web application Firewal (WASF)
+- WAF Monitors all HTTP requests made by client (legitimate users or hackers) that are forwarded to web applications
+- Los WebACL son reglas para validar al usuario
+- Proteccion contra ataques web comunes
+- API security
+- Protection para serverless applications
+- Application layer firewal
+- Integration with other AWS services
+- Protege de layer 7 web exploits
+- Protect threats like sql inyection y XSS
+
+# Cloudwatch
+- Monitorea otros servicios como EC2 Lambda, DynamoDB, S3
+- Se pueden setear alarmas, para mandar mensajes, por ejemplo si se llega al 70% de la potencia de un servicio
+- Se puede usar Metric insights
+- Desde cloudwatch se puede revisar la capacidad de los EC2 y activar el autoscaling
+- Existen metrics namespaces: las cuales se aislan entre aplicaciones la informacion
+- Cada servicio esa dentro de su namespace
+- Dimensions: te da mas informacion sobre los servicios usados
+- Existen resoluciones
+  - Standard resolution: With data at a granularity of one minute
+  - High Resolution: With data at a granularity of one second
+- Se pueden hacer log groups, por ejemplo para 2 apps distintas se pueden agrupar en un grupo y todos los logs se ponen en una misma consola, por ejemplo se puede usar para un grupo de aplicaciones relacionadas a un proceso
+- Insights allows querying logs to derive more complex metrics and insights
+- Los namespaces contienen cloudwatch metrics que mantienen la data isolada para prevenir agrupaciones innecesarias
+- Cloudwatch logs agent: una version antigua de agents, puede solo mandar logs pero no metricas
+- Cloudwatch unified agent: una nueva version del agente, puede mandar logs y metricas
+
+# Cloudwatch alarms
+- Se pueden setear alarmas para ciertos eventos, pueden lanzar notificaciones como administrador, llamar lambda functions, o publicar en SNS
+- Las composite alarm mandan una alarma si se cumplen varias condiciones en vez de una
+
+# AWS Cloudtrail
+- Trackea y registra todas las interacciones entre las APIs, quienes ejecutan cosas que hacen y cuando lo hacen
+- Trackea toda la actividad del usuario dentro de una cuenta de AWS
+- Cada momento que un usuario hace una accion dentro de aws, un evento es logeado en cloudTrail
+- Cloudtrail puede hacerle trigger a cloudwatch
+- Existe cloudTrail Insights
+- The events are stored for 90 days, but can be saved on s3 for more time
+
+# AWS X-Ray
+- Ayuda a los desarrolladores a analizar y debuguear distributed y microservices architectures
+- Se tiene que importar X-Ray sdk para habilitar
+- Trace collector, receives traces from application and forwards it to X-Ray
+  - AWS Distro for open telemetry (ADOT) collector
+  - Amazon CloudWatch Agent
+  - X-Ray daemon
+- X-Ray daemon/agent is already enabled on Lambda and other AWS Services
+- Segments detail a resource work including request and response data tasks performed issues and timing information
+- Subsegments provide more granular details about downstream calls your application makes to fulfill the original requests
+- A trace is a set of segments representing the path of a single request through your application including its timing, disposition, and other data
+- Anotations are key-value pairs used to index traces to be used with filters
+- Metadata is key-value pairs not indexed and thus can't be used for filtering/searching
+- Elastic beanstalk includes the xray daemon, lo puedes habilitar en .ebextensions/xray-daemon.config, tienes que configurar los IAM necesarios
+
+# Kinesis
+- Te ayuda a colecccionar data, procesarla y analizar,a por ejemplo en videos o data streams
+  - Log processing, analizar los logs o hacer batches
+  - Real-time metrics
+  - Complex stream processing like directed acyclic graphs
+  - IoT Telemetry data
+- Existen estas versiones
+  - Amazon kinesis video streams
+  - Amazon Kinesis Data Streams
+  - Amazon Kinesis Data Firehose
+
+# Kinesis data streams
+- Es como un pipe de data, un producer manda recursos a el data stream, y este lo manda a los consumers
+- Kinesis Capacity modes
+  - On demand: autoescala automaticamente, auto maneja shards para el throughput necesario
+  - Provisioned: se establece el numero de shards
+- Partition keys, es un tipo de id para definir a que shard se ira
+- Una hot partition es un shard que sobrepasa cierto flujo pesado, esto genera un ProvisionedThroughputExcedded
+- Puedes dividir el shard en dos shards, puedes mergear cold shards para ahorrr en costos
+- Hash of the partition key determines which shard a record will go into
+
+- Consumers
+  - Cassic Fan-out consumer, cada shard comparte 2MB/s entre todos los consumers
+  - Kinesis Client Library, Handles consumer failures, add checkpoints processed records, handles resharding
+  - Puede correr en elastic beanstalk, ec2, on premise servers
+  Solo podemos tener un Kinesis Client Library (KLC) por shard asi que el numero de instancias sera el mismo que el de shards
+
+# Kinesis Data Firehose
+- Delivers real-time streaming data to destinations such as S3 Redshift and OpenSearch
+- Soporta data transformations con Lambda
+- Near realtime
+- Failed data can be send to S3 To analisis
+- Kinesis data stream puede ser usado como data stream
+- Ingest data in realtime
+- Kinesis data streams
+  - Scaling is handled by user, data is stored for 1-365 days
+  - Soporta replay
+- Kinesis Firehose
+  - Store streaming data into S3, Redshift, etc
+  - Near real time
+  - Fully managed
+  - No data storage
+  - No replay capability
+
+# Kinesis Data Analytics
+- Te permite analizar data usando SQL
+- Se usa para time-series analytics, real time dashboards, y real-time metrics
+- sus sources solo pueden ser kinesis data streams y kinesis firehose, y sus sinks tambien (output)
+
+# SNS vs SQS vs Kinesis
+- SQS te ayuda a hacer decoupled architecture
+  - Great for sending messages between services
+- SNS manda data a varios suscribers
+  - Data is not persisted
+  - Data is segregated out by topic
+- Kinesis
+  - Real time data ingestion and procesing
+  - Usado en Big data Analytics y ETL
+
+# AWS Athena
+- Analiza data guardada en S3 buckets usando SQL
+- Serverles, pags por query, tiene built-in functions matematicas o utiles, suporta varios formatos de data, integracion con otros servicios de AWS
+
+# Open search
+- Es un fork de elastic search, te ayuda a ingest data, secure data, search data, agregate, view, and analize data
+  - Log analytics
+  - Application search
+  - Enterprise search
+- es un fully managed service, for easy depolyment opeartion and scaling of open search clusters, existen dos tipos de clusters
+  - Managed clusters
+  - Serverless clusters
+- Usos
+  - With dynamoDB we can only perform efficient queries on the primary key or attributes used un GSI/LSI
+  - Rleational databases can only perform efficient queries on columns that have indexes
+  - With openSearch we can efficiently query data on any field/attribute
+  - This makes OpenSearch great for implementing search functionality in apps
+
+# CodeCommit - VCS and git
+- Es una alternativa a gitub y gitlab, pero tiene varios beneficios extra
+- Distributed version control, para qu varias personas trabajen a la vez
+- Branching and merging
+- Staging Area, para revisar el codigo antes de mergearlo
+- Non-linear development
+- Tracking history
+
+- Git workflog
+  - Working directory
+    > git add
+  - Staging Area
+    > git commit
+  - Local Repo
+    > git push
+  - Remote Repo
+
+- Es git compatible
+- no size limit
+- Tiene integracion nativa con IAM, para decidir quienes tienen acceso
+- Es fully managed service
