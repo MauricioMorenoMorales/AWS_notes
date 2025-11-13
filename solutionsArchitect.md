@@ -147,3 +147,25 @@ Debemos de buscar la mejor solucion de seguridad, la mejor solucion se determina
 - Existen los VPC endpoints que te dan salida oculta a los servicios externos
 - Que si necesitas enviar gente a ambos archivos, usar un recepcionista externo fuera de estos edificios, esto seria el load balancer
 
+# Turning up security network services
+- Si necesitas que distintas VPCs se comuniquen entre ellas de manera privada, usa VPC peering
+- Los NAcl no se adieren a el least privilege principle
+- Se usan los routing tables para manejar la comunicacion entre los servicios internos de las vpcs
+- Puedes usar los IP addresses para permitir que tus developers se conecten a los entornos de desarrollo
+- El NAT gateway sirve para que los servicios accedan a internet pero internet no accede a ellos, tienes que ponerlas en un public subnet, y las privates subnets se concatcatn con esta public subnet
+- Si todos los elementos dentro de un vpc requieren solo traer informacion peroe no mandar puedes hacer un Egress-Only Internet Gateway en vez de un NAT gateway
+- Las DNS se pueden usar internamente
+- El elastic network adapter puede funcionar para tareas de high throughput y low latency como videojuegos etc
+- El elastic fabric Adapter (EFA) permite comunicacion interna de muchos servicios internos a altas velocidades con high throughput
+
+- NACLs significa Network Access control list
+
+- Que es un egress only gateway
+- Que es un Elastic network adapter
+- Que es un Elastic Fabric Adapter
+- Que es un efimeral port
+
+In EC2
+  in public subnet
+    Multiplayer backend in a VPC
+    needs outbound trafic but restrict all unsolicited inbound

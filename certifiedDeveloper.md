@@ -1242,3 +1242,116 @@ SAM Template
 - no size limit
 - Tiene integracion nativa con IAM, para decidir quienes tienen acceso
 - Es fully managed service
+
+# CodeBuild
+- Esta parte del proceso te permite lintear el codigo, formatearlo, correr unit e integration tests, build y package the code, upload artifacts
+- Continuous delivery es cuando hay continuous integration (se hace buld y test), pero se deployea a stating y produccion manualmente, si se deployea a estas partes automaticamente es continuous deployment
+- Codebuild te permite traer data de distintos lugares, s3 codecomit github gitlab etc
+- Se suelen usar Buildspec.yaml para manejar este proceso
+- En el valor install se especifican las apps que usamos tipo python, nodejs, y commands, alli sueles poner los comandos que vas a ejecutar
+- pre_build, se ejecutan o instalan comandos
+- Build, pasas los comandos que usaras al construir la app
+- Se suele crear un artifact despues del build, por que se evita que llegue a produccion todos los archivos innecesarios tipo los .config .gitignore etc
+
+# Code Pipeline
+- Este servicio te permite llevar un proceso para desplegar un codigo, junta varios servicios de tal modo que facilite el uso de el pipeline
+- Tambien permite un manual review del codigo, y despues se hace el code deploy
+- Tiene integraciones con distintos servicios aws
+
+# Code deploy
+- Es un fully managed service que te permite desplegar distintos tipos de codigo, ECS, EC2, Lambda
+- Automated deployments
+- Centralized control
+- Rollbacks
+- Health tracking
+- Rolling and blue green updates
+
+- Tienes que setear un deployment group antes de usarlo, es donde se va a desplegar la app
+- Luego se crea un deployment
+- Tienes que especificar tus deployment settings
+- Finalmente haces el deploy de la app
+
+- En el archiov appspec.yaml especificas los archivos, comandos para parar el servidor, comandos para ejecutar despues de la instalacion, como correrla, los permisos usados
+
+- Los code deploy agent necesitan permisos para acceder otros servicios, recibir policies, se tienen que crear primero para poder empezar a usar CodeDeploy
+
+Existen distintos tipos de deployment types
+
+- EC2/ On-Premise, AllAt Once, aqui los usuarios no pueden usar la app por un rato
+
+EC2/ On-Premise, Half at a time se actualiza la mitad y luego la otra
+
+EC2/On-Premise - OneAtATime
+
+- Blue/Green Deployment Strategy: Se manda la gente al grupo azul pero tambien aal grupo verde el cual va a ser usado para testing
+
+- Deployment Types - Lambda
+- Tambien hay deployments lineares
+- Esta el Lambda canary, se crea un lambda v2 y se manda el 10% del trafico alli, si ve que todo bien pasa el 100% del trafico a la v2
+
+- ECS, tambien puede hacer algo similar a linear, va pasando el 10% del trafico poco a poco hasta llegar al 100% a la nueva version
+
+- Tambien esta el all at once
+
+# Code Star
+- Da herramientas que facilitan el desarrollo y despliegue de apps a aws, te da templates para web applications web servers, cosas manuales que se usan cuando haces tu aplicacion
+- Se integra con todos los otros servicios CI/CD de aws, tiene un team collaboration y issue tracking dashboard, se basa en role-based access controls, da pre configured Environments
+
+- Los templates tienen los Programming languages, CI/CD pipelines, y compute platforms
+
+- Puedes tener roles, developer, tester, viewer
+
+# Code Artifact
+- Te permite almacenar packages libraries repositories dependencies privadas o publicas,
+- Funciona como intermediario, cuando requieres un package lo busca en internet y lo cachea, para tenerlo cerca del developer
+
+
+# Code Guru
+- Es un servicio con Machine Learning, te da ayuda dependiendo de lo que ve en el codigo, te da recomendaciones para mejorar la calidad del codigo, te permite mejorar el performance de tu aplicacion, hace reviews de tu codigo
+
+# Cloud 9
+- Es un IDE que te ayuda a escribir codigo, se escribe todo en el web browser
+- Real-time collaboration
+- Seamless integration with AWS
+- Full UNIX terminal
+- Corre detro de una EC2 Instance
+
+# Code Whisperer
+- Te ayuda a mejorar tu codigo dando comentarios a tu codigo, la diferencia con Code Guru es que code guru una vez subes el codigo a tu repositorio lo analiza, code whisperer corre en tu IDE mientras escribes el codigo
+
+# Amplify
+- Te provee lo que necesitas como frontend para subir productos frontend
+- Puedes construir SSR web Apps, Single page web applications, native mobile apps, y cross app aplications
+- Soporta desde javascript angular vue, hasta react native flutter java etc
+- Facil configuracion, primero inicializas el proyecto, despues agregas backend services, authentication API storage etc, conectas el frontend, y despliegas la aplicacion
+
+# Exam tips
+en las policies de code commit puedes tener preguntas sobre los permisos, por ejemplo un developer puede hacer branches o algunas cosas pero no merges, el admin es el que crea o elimina repositorios
+
+# APPConfig
+- Cuando tienes que cambiar una pequeña configuracion en tu app no tienes que reiniciar todo el servidor, puedes usar environment variables, pero esto puede causar problemas si tienes distintas aplicaciones leyendolas
+- Aqui se usa AppConfig, todas las aplicaciones tran su informacion de app config y cuando se hacen cambios a app config estas se actualizan
+- Hace live updates sin cambios de codigo
+- se suele usar para feature flags, Allow/deny lists, application tuning y centralized configuration storage
+
+# MSK Kafka
+- Kafka te ayuda a stremear data, se suele usar tambien amazon kinesis
+- El servicio de aws agrega Zookeper que te permite manejar los clusters de kafka, aws te permite administrar todo lo de los servicios, automatic recovery, multy AZ deployment, 
+
+# AWS Systems manager
+- Te permite administrar tus sistemas modificar configuraciones, ver performance, cambiar calendarios inventario
+- Primero tienes que instalar el SSM Agent, se puede usar en la consola CLI o SDK
+- te da control centralizado, resource grouping, automations,  patch management, Operational insights, ayuda a el configuration management, administrar secret and configuration management, remote management, compliance enforcement, e hybrid capabilities
+- Tiene un application manager y parameter store
+- Tiene un change manager, te permite ver estructuradamente planes para realizar cambios a todas las apps
+- Se pueden hacer Atomations
+- Node Management, te permite manejar compliance inventory session manager, run commands, state manager, patch manager, distribuitors
+- Incident Manager: Te permite detectar problemas notificar a los ingenieros via email o SMS y planear una respuesta rapida a este problema
+
+
+# Tips
+- Se suelen usar los Elastic network adapters para videojuegos, y los Elastic Fabric Adapter para aplicaciones que requieren niveles mas altos incluso en throughput
+
+- En algunas ocasiones puedes usar el security group para dos servicios y estos ya deniegan el outbound traffic, y si pertenecen al mismo security group ya se comunican entre si
+
+- Se puede usar AWS Certificate manager para enviar informacion a los clientes usando SSL/TLS y ya despues con el load balancer desencriptar la data
