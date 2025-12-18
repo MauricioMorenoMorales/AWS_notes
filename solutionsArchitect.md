@@ -169,3 +169,142 @@ In EC2
   in public subnet
     Multiplayer backend in a VPC
     needs outbound trafic but restrict all unsolicited inbound
+
+# Designing for Rliability
+
+# Tips
+- Se suelen usar los Elastic network adapters para videojuegos, y los Elastic Fabric Adapter para aplicaciones que requieren niveles mas altos incluso en throughput
+
+- En algunas ocasiones puedes usar el security group para dos servicios y estos ya deniegan el outbound traffic, y si pertenecen al mismo security group ya se comunican entre si
+
+- Se puede usar AWS Certificate manager para enviar informacion a los clientes usando SSL/TLS y ya despues con el load balancer desencriptar la data
+
+# Notes
+- Normalmente las VPC Interface endpoint se suelen usar para comunicarse seguramente con S3 o Vault, storage en general
+
+- S3 encripta la info por default, para evitar eso tienes que mover
+
+- S3 tiene 4 layers de access control Public access Firewall ->  IAM -> bucket policies -> Access control Lists -> Block public access
+
+- Es importante habilitar logging si quieres ver la info de S3
+
+- Para data protegida tipo farmaceuticas tienes que usar COmpliance mode para que no se borre la data y governance mode para proteger esta data pero permitir excepciones
+
+- Tambien puedes usar object lock para prevenir que se borre data
+
+- Si s3 va a ser accesido por S3 tienes que hacer un VPC endpoint, agregar necessary routes al VPC route table to direct S3 traffic to the endpoint
+
+# AWS backup
+- Se puede agregar Legal Hold a backups para evitar que se borren por procesos legales
+- Tambien se puede usar Vault Lock para evitar que se borren backups por n cantidad de tiempo
+- En S3 es object lock y en AWS backup es vault lock
+
+# AWS Recovery
+- Con el protocolo TCP 1500 puedes mandar actualizaciones de tu estado por si se necesita un recovery futuro
+- EL proceso de regresar al sistema original tras un recovery se le llama failback
+
+# Tips
+- Se suelen usar los Elastic network adapters para videojuegos, y los Elastic Fabric Adapter para aplicaciones que requieren niveles mas altos incluso en throughput
+
+- En algunas ocasiones puedes usar el security group para dos servicios y estos ya deniegan el outbound traffic, y si pertenecen al mismo security group ya se comunican entre si
+
+- Se puede usar AWS Certificate manager para enviar informacion a los clientes usando SSL/TLS y ya despues con el load balancer desencriptar la data
+
+- Siempre haz doble cuando veas encripcion, siempre debe de haber encripción para seguridad
+
+Que es un overlapping CIDR block?: Es un CLassless inter domain router, define el numero de VPNS 10.0.0.0/16 que estarn disponibles dentro de tu subred
+
+ACL o access controll lists controlan subnets no endpoints
+
+- Para encriptar contenido en cloudfront lo mejor es usar CMK customer managed keys
+
+- Los instances volumes o EBS son efimeros la data puede perderse si el EC2 se cierra, por eso hay que usar S3
+- Los Elastic file system permiten a toda una region acceder a la misma info, existe una version cold para esto
+
+- Puedes usar los presigned urls para acceso temporal a tus apps, y usar encripcion para evitar robos
+
+- Se puede encriptar la data entre el load-balancer y el cliente para aumentar seguridad y ya el load balancer desencripta la data en la subnet de manera segura y el sistema lo maneja allí
+
+- Se puede usar un NAT gateway apuntando a una subnet privada para evitar ataques DDoS
+
+- Aqui hay unos servicios que pueden ser similares pero tienen diferencias
+  - CloudTrail: API level monitoring, logs the calls, Who Made What changes, IAM level monitoring
+  - AWS config: Records config level changes, inform what changes are made, notifies regarding changes made in your accounts
+  - Cloud Wach: Monitors performance, Future prediction & Analisis
+
+- Nitro Enclaves proveen es como una maquina virtual dentro de una maquina virtual, aisla procesos para mantener seguridad, nisiquiera el EC2 en el que se creó se puede acceder a esta instancia
+
+- Lo mas sencillo para comunicar distintos EC2 seguramente es agregar roles o permisos para la tarea, no tanto manejar credenciales o key managers
+
+- Parece que los Elastic Kubernetes services suelen tener propiedades de emision de logs pero no leen info por seguridad
+- El Pod execution role permite individual pods to assume an IAM role and access AWS services directly without going thorugh the node IAM role
+- Self managed nodes for EKS te permite tener control sobre todo el proceso de EKS al contrario de un servicio administrado por AWS
+
+- Existen automatic image scanning in th ECR repository, que te permiten analizar para buscar vulnerabilidades
+
+- Se pueden optimizar gastos si haces un esquema hibrido, en el que tareas cortas constantes se pagan con Spot instances, y variables y largas con On-demand
+
+- Para evitar mayor que las funciones hagan timeout para cargas grandes se puede dividir payload en chunks pequeños y que sean procesados por distintas lambdas invocations
+
+- Event Bridge te ayuda a triggerear ejecuciones de lambda functions escuchando eventos importantes
+
+- Existe el serverless application repository con librerias o aplicaciones pre construidas para ayudarte en algunos problemas o para apps, solo tienes que verificar el codigo y que se adiera a tus necesidades o seguridad requerida
+
+- AWS Amplify automaticamente encripta data at rest y data en transito sin configuraciones adicionales
+- Un outpost se puede poner dentro de la network on premise de la empresa
+
+- Solo PostgresSQL soporta native autnehntication y kerberos
+
+- Se prefiere usar memory-optimized instances de RDS para apps que en ciertos momentos tienen spikes de trafico como navidad, estas se prefieren por encima de las burstable
+
+- La metrica mas importante para ver el performance de tu base de datos
+
+- Performance Insights te ayuda a analizar y optimizar SQL queries
+- Las RDS no tienen que usar CloudWattch para los logs, se puede guardar los logs directamente de la RDS consola, incluso en algunos casos guardarlos en un S3
+- Pudes usar RDS Event subscriptions para lanzar mensajes en ciertos escenarios via SNS
+- Para encriptar data o en general las preguntas relacionadas a aws usan KMS para guardar la info dentro de la base de datos, para data en transito se usa SSL/TLS
+
+- Amazon Aurora divides your database volume into 10GB segments spread across many disks with each 10GB chunk of your database volume replicated six ways across three Availability zones
+
+- NO se usa SDK integration para traer data a la RDS, se usa una integración automatica que rota las credenciales
+
+- No tienes que poner la base de datos en otro VPC, es un overkill pueden estar en el mismo servidor
+
+- Para detectar y asegurar compliance de regulaciones financieras puedes usar el Amazon Aurora Database Activity Streams
+
+- Aurora DB puede usar SSL/TLS para transmitir data de manera segura
+
+- Existe el RDS proxy que te permite funcionar como un load balancer (mas o menos) para optimizar el trafico de tu base de datos
+
+
+# Investigar
+Que es un Transit gateway
+- Que es un privatelink
+- Que es un VPC endpoint - Creo es un private endpoint, la gente puede conectarc eprivadamente
+- Que es un VPC Interface Endpoints
+- Que esAmazon FSx?
+- Que es un Gateway Endpoint for S3 y un Inteface endpoint for S3
+- Que diferencia hay entre Legal Hold y Vault Lock en aws backup
+- QUe es el governance mode?
+- Que es Amazon S3 File Gateway
+- Que es Amazon FSx FIle Gateway
+- Que es AWS Gateway Tape
+- Que es AWS Storage Gateway Volume Gateway
+- Que es un Bastion Host
+- Que es AWS System Manager (o tambien AWS System Manager Fleet Manager)
+- Que son las EC2 Instance Roles
+- Que es un Certificate Authority
+- Que es UEFI Secure Boot y Measured boot with NitroTPM
+- Que es AWS lightsail
+- Que diferencia hay entre un Application Load Balancer y un Network load balancer y por que se suele usar HTTPS en el ALB
+- Que es Fargate
+- Que es ECR
+- Que es AWS Batch
+- Que es AWS GuardDuty
+- Que es un Outpost?
+- Que es AWS RedShift?
+
+
+# Preguntas a revisar
+Turning up Security on network services - part 3
+- 9:12

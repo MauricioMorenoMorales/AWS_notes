@@ -1062,6 +1062,14 @@ SAM Template
 - Request an AWS limit increase if necessary
 - Define Key Poicies for all key operations: Create, delete, encrypt and decrypt
 
+Los comandos usados para encriptar y desencriptar suelen ser estos
+```bash
+aws kms encrypt --key-id alias/demo-key --plaintext \
+  fileb://password.txt --output text --query CiphertextBlob > password.txt.encrypted
+
+aws kms decrypt --ciphertext-blob fileb://<(cat password.txt.encrypted | base64 --decode) --output text --query Plaintext | base64 --decode > password.txt.decrypted
+```
+
 # Systems manager parameter store
 - Secure storage of rconfiguration data and secrets, stores also database strings passwords, plain text and encrypted data
 - Es el parameter store que usabamos en fmi xd
@@ -1347,11 +1355,3 @@ en las policies de code commit puedes tener preguntas sobre los permisos, por ej
 - Se pueden hacer Atomations
 - Node Management, te permite manejar compliance inventory session manager, run commands, state manager, patch manager, distribuitors
 - Incident Manager: Te permite detectar problemas notificar a los ingenieros via email o SMS y planear una respuesta rapida a este problema
-
-
-# Tips
-- Se suelen usar los Elastic network adapters para videojuegos, y los Elastic Fabric Adapter para aplicaciones que requieren niveles mas altos incluso en throughput
-
-- En algunas ocasiones puedes usar el security group para dos servicios y estos ya deniegan el outbound traffic, y si pertenecen al mismo security group ya se comunican entre si
-
-- Se puede usar AWS Certificate manager para enviar informacion a los clientes usando SSL/TLS y ya despues con el load balancer desencriptar la data
