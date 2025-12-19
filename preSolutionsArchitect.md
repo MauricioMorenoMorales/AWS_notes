@@ -28,3 +28,21 @@ Las vpcs te ayudan a aislar servicios
 - Los security groups son firewalls para recursos individuales, como instancias y load balancers, los security groups son Stateful y los NACL stateless
 - Cada subnet en una VPC tiene que estar asociada a un Network ACL, las ACL se pueden asociar a multiples subnets pero las subnets solo a un ACL, por default los security groups tienen reglas que permiten todo el outbound traffico
 - Network ACLs no filtran trafico destinado a los siguientes servicios Amazon DNS, Amazon Dynamic host configuration protpcol, Amazon EC2 instance metadata, Amazon ECS task metadata endpoints, License for Windows instances, Amazon Time Sync Service, REserved IP addresses used by default VPC Router
+
+# Load balancers
+
+- Los listeners son configuraciones que redirigen el trafico a target groups formados por instancias, son las difiniciones de como mueves la data
+- Existen tres tipos de ELB< Classic, application y network, application son para HTTP y network todo lo que no es HTTP y es más rápido
+
+# VPNS
+- Una virtual private gategay es donde se conecta la vpn 
+- Lon on premise se pueden asociar a una tabla o BPG
+
+# Direct Connect
+- ES un cable fisico para conectarte a AWS
+- Primero te conectas a un Direct Connect DX location, esta tiene un customer router que recibe y un aws router que redirecciona
+- Se te cobra por port hours y data transit
+
+# VPC Peering
+- Te permite comunicar distintos vpcs entre distintas o mismas regiones o incluso cuentas
+- Tienes que configurar routing tables para esto
