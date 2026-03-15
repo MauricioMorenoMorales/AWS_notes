@@ -104,3 +104,106 @@ Las vpcs te ayudan a aislar servicios
 # Bacckup vs disaster recovery
 - El disaster recovery es una estrategia general que abarca mas conceptos en el que los backups son un subset pequeño
 - Requieren un AWS Replication agent para trabajar en el disaster recovery, este leera a los source servers
+
+# Storage gateway
+Para el examen, piensa en AWS Storage Gateway como el "puente" que conecta tu centro de datos local (On-premises) con la nube de AWS. Es la definición de Almacenamiento Híbrido.
+
+Aquí tienes los puntos clave para identificarlo en las preguntas:
+
+Lo más importante (The "Core")
+Propósito: Permite que aplicaciones locales usen almacenamiento en la nube (S3, EBS, Glacier) sin cambiar su código, usando protocolos estándar (NFS, SMB, iSCSI).
+
+Despliegue: Normalmente se instala como una Máquina Virtual (VM) en tu propio centro de datos (VMware o Hyper-V).
+
+Los 3 Tipos (Esto es lo que preguntan)
+El examen te pondrá un escenario y deberás elegir cuál de estos tres usar:
+
+S3 File Gateway (Archivos):
+Protocolos: NFS y SMB.
+Uso: Accedes a archivos localmente, pero se guardan como objetos en S3.
+Clave: Ideal para copias de seguridad de archivos o compartir datos entre local y la nube.
+
+Volume Gateway (Bloques/Discos):
+Protocolo: iSCSI.
+Uso: Presenta discos virtuales a tus servidores locales. Tiene dos modos:
+Cached Volumes: Los datos están en S3, y solo lo más usado se queda local (ahorras espacio local).
+Stored Volumes: Todo el dato está local, y se hace un backup asíncrono a S3 (baja latencia total).
+
+Tape Gateway (Cintas):
+Uso: Reemplaza las librerías de cintas físicas (backup tradicional) por Cintas Virtuales.
+Destino: Los datos terminan en S3 Glacier o Glacier Deep Archive para cumplimiento legal a largo plazo.
+
+# EC2
+- Instance types
+  - General Purpose
+  - Compute Optimized
+  - Memory Optimized
+  - Storage Optimized
+  - GPU Instances
+- Amazon Machine Image: Te permite instalar sistemas operativos
+  - Existen public AMI y privates
+  - Se pueden hacer Cluster Placement Groups para que todo este en el mismo rack
+  - Partiton placement group, estan en dinstintas particiones con sus propios racks
+  - Spread placement group, que aisla a todas las instancias para que no estén juntas
+
+# ECD image builder
+- Las compañias suelen tener golden images que son las imagenes para producción optimizadas al maximo
+- Para crearse se siguen unos pasos
+  - Se escoge una imagen
+  - Agregas o quitas software de esta imagen base
+  - Despues se customizan configuraciones o scripts
+- Despues se testea la imagen
+- Despues se distribuyen las AMIS a aws regions y aws accounts
+- Se crean instancias para la imagen
+- TIene version management
+
+# Elastic Network Interfaces
+Imagina que tienes una computadora física; para conectarla a internet, necesitas una tarjeta de red (donde conectas el cable Ethernet).
+En la nube de AWS, un Elastic Network Interface (ENI) es exactamente eso: una tarjeta de red virtual que puedes conectar a tus instancias (servidores virtuales EC2).
+Aquí te explico qué contiene y para qué sirve de forma sencilla:
+
+¿Qué compone a una ENI?
+Cuando creas una ENI, esta tiene atributos lógicos importantes:
+Direcciones IP: Una IP privada (y opcionalmente una pública o Elastic IP).
+Dirección MAC: Una identificación única de hardware, igual que las tarjetas físicas.
+Grupos de Seguridad (Security Groups): Las reglas de firewall (qué puertos están abiertos y cuáles cerrados).
+Nota: Cada instancia EC2 que lanzas viene con una ENI por defecto (llamada interfaz principal o eth0), pero tú puedes crear ENIs adicionales y conectarlas a esa misma instancia.
+
+1. Recuperación ante desastres (Failover) barato
+2. Licencias de Software atadas a la MAC
+3. Separación de tráfico (Seguridad y Gestión)
+
+- Se pueden asociar multiples security groups a los servicios en general
+
+# Elastic beamstalk
+- Elastic beamstalk te ayuda a desplegar una aplicación de manera sencilla y manejar todos los servicios de manera sencilla
+- Aqui existen los envirnoments, que contienen todo lo necesario para desplegar a produccion desarrollo o staging
+
+# LightSail
+- Esta es la forma más rápida de subir una aplicación a internet, tiene instancias, containers, bases de datos, networking y DNS, no tienes todas las features, lo hace más simple
+- Tiene ya blueprints pre hechos para proyectos comunes
+- El proceso, es hacer tu imagen -> subirla a Amazon ECR -> COnfigurar Lightsail -> hacer deploy
+
+# ECR
+- Te permite administrar containers
+- HAces un build, creas un docker file, creas el docker image
+> Error "no basic auth credentials" al hacer push	Te falta correr `aws ecr get-login-password
+> Costos altos de almacenamiento en ECR	Configura una Lifecycle Policy para borrar imágenes viejas o "untagged".
+> ECS falla con "ImagePullBackOff"	Revisa el Task Execution Role (permisos de IAM).
+> Requisito de seguridad corporativa	Activa Image Scanning on push.
+
+# App runner
+- Te ayuda a manejar el deploy a internet de manera sencilla, tambien puedes subir imagenes a ECR, esta escucha a codeCOmmit para hacer build subir imagenes o actualizar servicios, tambien usa github y otros servicios
+- escala automaticamente
+- Es cost effective
+
+# AWS Batch
+
+# AWS Serverless Application Repository
+- ES un tipo de github para compartir infraestructura serverless, se integra con AWS SAM, permite deployment rapido y usar aplicaciones reusables
+
+# Amplify
+- Es una solucion completa para hacer mobile y web development, permite autentificacion de manera sencilla, APIS, storage, hosting, analytics e interacciones, tiene prebuild UI components tambien
+
+# AWS Outposts
+- Te permite extender la infraestrictura y servicios de AWS en un centro de datos on-premise, por ejemplo para hacer trading en un lugar que requiere 0 latencia o para no mover datos sensibles a otras partes, necesita coneccion a internet
